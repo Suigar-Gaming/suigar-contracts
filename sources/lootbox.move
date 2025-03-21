@@ -10,6 +10,7 @@ module suigar::lootbox {
     use sui::vec_map::{Self, VecMap};
     use sui::random::{Self, Random};
     use std::string::{String};
+    use std::uq32_32::{Self};
 
     use suigar::house::{Self, House, AdminCap};
     use suigar::events;
@@ -243,6 +244,88 @@ module suigar::lootbox {
         object::delete(id);
 
     }
+
+    entry fun place_bet_and_reveal_lootbox_onchain_randomness<T0>(
+        lootbox_game: &mut LootboxGame<T0>,
+        house: &mut House<T0>,
+        lootbox_id: ID,
+        payment_coin: &mut coin::Coin<T0>,
+        r: &Random,
+        ctx: &mut TxContext
+        
+    ) {
+
+        // Get lootbox
+        let lootbox = get_mut_lootbox(
+            &mut lootbox_game.lootboxes,
+            &lootbox_id
+        );
+
+        let sender = tx_context::sender(ctx);
+
+
+        // Assertion
+        assert!(
+            coin::value(payment_coin) >= lootbox.price,
+            EInsufficientPayment
+        );
+
+        assert!(
+            lootbox.is_playable == true,
+            ELootboxNotPlayable
+        );
+
+        // Take payment
+        let coin = coin::split(payment_coin, lootbox.price, ctx);
+        let stake = coin::value(&coin);
+        house::deposit(house, coin);
+
+        // Create purchased lootbox
+        let max_reward = *vector::borrow(
+            &lootbox.reward_amounts,
+            vector::length(&lootbox.reward_amounts) - 1
+        );
+        let uid = object::new(ctx);
+        let id = object::uid_to_inner(&uid);
+
+        let fund= house::take_fund_balance(house, max_reward);
+
+        house::distribute_referral_rewards(
+            house,
+            stake,
+            tx_context::sender(ctx)
+        );
+
+
+        let generator = random::new_generator(r, ctx);
+        let rand = random::generate_u64_in_range(&mut generator, 0, TotalPropability);
+        let reward_index = get_reward_index(rand, &lootbox.reward_probabilities);
+        let reward = *vector::borrow(
+            &lootbox.reward_amounts,
+            reward_index
+        );
+
+        let reward_coin = coin::take(&mut fund, reward, ctx);
+        house::join_balance(house, fund);
+
+        transfer::public_transfer(reward_coin, sender);
+
+        let payout_multiplier = uq32_32::from_quotient(reward, stake);
+
+        events::emit_lootbox_revealed_event(
+            id,
+            stake,
+            payout_multiplier,
+            lootbox_id,
+            sender,
+            reward
+        );
+
+
+        object::delete(uid);
+        
+    }
+
 
     fun assert_reward(
         amounts: vector<u64>,

@@ -7,9 +7,13 @@ module suigar::house {
     use sui::balance::{Self, Balance};
     use sui::object_table::{ObjectTable};
 
+    use suigar::events;
 
     friend suigar::lootbox;
     friend suigar::coinflip;
+    friend suigar::dice;
+    friend suigar::limbo;
+    friend suigar::plinko;
 
 
     const EInsufficientBalance: u64 = 2;
@@ -94,6 +98,10 @@ module suigar::house {
         coin::take<T0>(&mut house.balance, amount, ctx)
     }
 
+    public fun withdraw_all<T0>(_: &AdminCap, house: &mut House<T0>): Balance<T0> {
+        balance::withdraw_all(&mut house.balance)
+    }
+
     public(friend) fun take_fund_balance<T0>(house: &mut House<T0>, amount: u64): Balance<T0> {
         balance::split(&mut house.balance, amount)
     }
@@ -176,6 +184,7 @@ module suigar::house {
         };
     }
 
+    #[allow(lint(self_transfer))]
     public fun claim_referee_rewards<T0>(house: &mut House<T0>, ctx: &mut TxContext) {
         let sender = 0x2::tx_context::sender(ctx);
         let referee_table = &mut house.referee_table;
@@ -186,9 +195,13 @@ module suigar::house {
 
         let referee_data = 0x2::object_table::borrow_mut<address, RefereeData<T0>>(referee_table, sender);
         let referee_rewards = balance::withdraw_all<T0>(&mut referee_data.referee_balance);
+
+        events::emit_referee_rewards_claimed_event(balance::value<T0>(&referee_rewards));
+
         transfer::public_transfer(coin::from_balance(referee_rewards, ctx), sender);
     }
 
+    #[allow(lint(self_transfer))]
     public fun claim_referrer_rewards<T0>(house: &mut House<T0>, ctx: &mut TxContext) {
         let sender = 0x2::tx_context::sender(ctx);
         let referrer_table = &mut house.referrer_table;
@@ -199,6 +212,9 @@ module suigar::house {
 
         let referrer_data = 0x2::object_table::borrow_mut<address, ReferrerData<T0>>(referrer_table, sender);
         let referrer_rewards = balance::withdraw_all<T0>(&mut referrer_data.referrer_balance);
+        
+        events::emit_referrer_rewards_claimed_event(balance::value(&referrer_rewards));
+        
         transfer::public_transfer(coin::from_balance(referrer_rewards, ctx), sender);
     }
 
