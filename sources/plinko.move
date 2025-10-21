@@ -27,6 +27,7 @@ module suigar::plinko {
     const EVectorIsEmpty: u64 = 10;
     const EInvalidMultipliersLength: u64 = 11;
     const EPlinkoConfigNotPlayable: u64 = 12;
+    const EInvalidConfigParams: u64 = 13;
 
     // === Structs ===
 
@@ -832,6 +833,9 @@ module suigar::plinko {
         max_number_of_balls: u8,
         ctx: &mut TxContext
     ) {
+        assert!(min_bet > 0, EInvalidConfigParams);
+        assert!(max_bet >= min_bet, EInvalidConfigParams);
+        assert!(max_number_of_balls > 0, EInvalidNumberOfBalls);
         transfer::share_object(
             PlinkoGame<T0> {
                 id: object::new(ctx),
@@ -851,6 +855,9 @@ module suigar::plinko {
         max_bet: u64,
         max_number_of_balls: u8,
     ) {
+        assert!(min_bet > 0, EInvalidConfigParams);
+        assert!(max_bet >= min_bet, EInvalidConfigParams);
+        assert!(max_number_of_balls > 0, EInvalidNumberOfBalls);
         plinko_game.min_bet = min_bet;
         plinko_game.max_bet = max_bet;
         plinko_game.max_number_of_balls = max_number_of_balls;
@@ -867,6 +874,8 @@ module suigar::plinko {
         is_playable: bool,
     ) {
         assert!(vector::length(&multipliers) == (num_rows as u64) + 1, EInvalidMultipliersLength);
+        assert!(min_bet > 0, EInvalidConfigParams);
+        assert!(max_bet >= min_bet, EInvalidConfigParams);
         let plinko_config: &mut PlinkoConfig<T0> = vec_map::get_mut(&mut plinko_game.configs, &plinko_config_number);
         plinko_config.num_rows = num_rows;
         plinko_config.multipliers = multipliers;
@@ -892,6 +901,8 @@ module suigar::plinko {
         min_bet: u64,
         max_bet: u64,
     ) {
+        assert!(min_bet > 0, EInvalidConfigParams);
+        assert!(max_bet >= min_bet, EInvalidConfigParams);
         let plinko_config: &mut PlinkoConfig<T0> = vec_map::get_mut(&mut plinko_game.configs, &plinko_config_number);
         plinko_config.min_bet = min_bet;
         plinko_config.max_bet = max_bet;
@@ -909,6 +920,8 @@ module suigar::plinko {
 
         // test if the length of the multipliers is equal to 2^num_rows
         assert!(vector::length(&multipliers) == (num_rows as u64) + 1, EInvalidMultipliersLength);
+        assert!(min_bet > 0, EInvalidConfigParams);
+        assert!(max_bet >= min_bet, EInvalidConfigParams);
 
         // Can add a EV check here
 
@@ -965,10 +978,15 @@ module suigar::plinko {
 
         let plinko_config: &PlinkoConfig<T0> = vec_map::get(&plinko_game.configs, &plinko_config_number);
 
+        assert!(
+            num_balls > 0,
+            EInvalidNumberOfBalls
+        );
+
         let multipliers: vector<UQ32_32> = plinko_config.multipliers;
         let max_multiplier: UQ32_32 = get_max_value(multipliers);
 
-        
+
         let amount: u64 = coin::value(&bet_coin);
         let max_reward: u64 = uq32_32::int_mul(amount, max_multiplier);
 

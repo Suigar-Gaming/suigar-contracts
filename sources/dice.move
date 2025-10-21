@@ -26,6 +26,8 @@ module suigar::dice {
     const EInvalidBetId: u64 = 5;
     const EInvalidNumberOfDices: u64 = 6;
     const EInvalidBetThreshold: u64 = 7;
+    const EInvalidConfig: u64 = 8;
+    const EInvalidRtpConfig: u64 = 9;
 
     //=================================================================
     // Module Structs
@@ -78,6 +80,14 @@ module suigar::dice {
         max_rtp: UQ32_32,
         ctx: &mut TxContext
     ) {
+        assert_valid_config(
+            min_bet,
+            max_bet,
+            min_bet_threshold,
+            max_number_of_dices,
+            min_rtp,
+            max_rtp,
+        );
         transfer::share_object(
             DiceGame<T0> {
                 id: object::new(ctx),
@@ -101,11 +111,41 @@ module suigar::dice {
         min_rtp: UQ32_32,
         max_rtp: UQ32_32,
     ) {
+        assert_valid_config(
+            dice_game.min_bet,
+            max_bet,
+            min_bet_threshold,
+            max_number_of_dices,
+            min_rtp,
+            max_rtp,
+        );
         dice_game.max_bet = max_bet;
         dice_game.min_bet_threshold = min_bet_threshold;
         dice_game.min_rtp = min_rtp;
         dice_game.max_rtp = max_rtp;
         dice_game.max_number_of_dices = max_number_of_dices;
+    }
+
+    fun assert_valid_config(
+        min_bet: u64,
+        max_bet: u64,
+        min_bet_threshold: u64,
+        max_number_of_dices: u8,
+        min_rtp: UQ32_32,
+        max_rtp: UQ32_32,
+    ) {
+        assert!(min_bet > 0, EInvalidConfig);
+        assert!(max_bet >= min_bet, EInvalidConfig);
+        assert!(min_bet_threshold > 0 && min_bet_threshold < MaxRange, EInvalidConfig);
+        assert!(max_number_of_dices > 0, EInvalidConfig);
+        assert!(
+            uq32_32::le(min_rtp, max_rtp),
+            EInvalidRtpConfig
+        );
+        assert!(
+            uq32_32::le(min_rtp, uq32_32::from_quotient(80, 100)),
+            EInvalidRtpConfig
+        );
     }
 
     // Modifiers ======================================================
@@ -120,6 +160,11 @@ module suigar::dice {
     ): ID {
         // Assertion
         let amount = coin::value(&bet_coin);
+
+        assert!(
+            number_of_dices > 0,
+            EInvalidNumberOfDices
+        );
 
         assert!(
             number_of_dices <= dice_game.max_number_of_dices,
