@@ -17,7 +17,7 @@ module suigar::lootbox {
 
 
     // Config ====================================================
-    const TotalPropability: u64 = 100_000_000;
+    const TotalProbability: u64 = 100_000_000;
 
     // Error codes ====================================================
 
@@ -54,6 +54,16 @@ module suigar::lootbox {
         fund: Balance<T0>,
     }
 
+    fun assert_valid_lootbox_params(price: u64, reward_amounts: &vector<u64>, reward_probabilities: &vector<u64>) {
+        assert!(price > 0, EInvalidInput);
+        assert!(vector::length(reward_amounts) > 0, EInvalidInput);
+        assert!(vector::length(reward_probabilities) > 0, EInvalidInput);
+        assert!(
+            vector::length(reward_amounts) == vector::length(reward_probabilities),
+            EInvalidInput
+        );
+    }
+
     //=================================================================
     // Functions
     //=================================================================
@@ -82,6 +92,7 @@ module suigar::lootbox {
         reward_probabilities: vector<u64>,
         ctx: &mut TxContext
     ) {
+        assert_valid_lootbox_params(price, &reward_amounts, &reward_probabilities);
         // Assertion
         assert_reward(
             reward_amounts,
@@ -114,6 +125,7 @@ module suigar::lootbox {
         reward_amounts: vector<u64>,
         reward_probabilities: vector<u64>,
     ) {
+        assert_valid_lootbox_params(price, &reward_amounts, &reward_probabilities);
         // Assertion
         assert_reward(
             reward_amounts,
@@ -222,17 +234,17 @@ module suigar::lootbox {
         );
 
         let generator = random::new_generator(r, ctx);
-        let rand = random::generate_u64_in_range(&mut generator, 0, TotalPropability);
+        let rand = random::generate_u64_in_range(&mut generator, 0, TotalProbability);
         let reward_index = get_reward_index(rand, &lootbox.reward_probabilities);
         let reward = *vector::borrow(
             &lootbox.reward_amounts,
             reward_index
         );
 
-        let reward_coin = coin::take(&mut fund, reward, ctx);
-        house::join_balance(house, fund);
-
+        let mut reward_fund_coin = coin::from_balance(fund, ctx);
+        let reward_coin = coin::split(&mut reward_fund_coin, reward, ctx);
         transfer::public_transfer(reward_coin, buyer);
+        house::deposit(house, reward_fund_coin);
 
         events::emit_revealed_lootbox_event(
             object::uid_to_inner(&id),
@@ -298,15 +310,16 @@ module suigar::lootbox {
 
 
         let generator = random::new_generator(r, ctx);
-        let rand = random::generate_u64_in_range(&mut generator, 0, TotalPropability);
+        let rand = random::generate_u64_in_range(&mut generator, 0, TotalProbability);
         let reward_index = get_reward_index(rand, &lootbox.reward_probabilities);
         let reward = *vector::borrow(
             &lootbox.reward_amounts,
             reward_index
         );
 
-        let reward_coin = coin::take(&mut fund, reward, ctx);
-        house::join_balance(house, fund);
+        let mut reward_fund_coin = coin::from_balance(fund, ctx);
+        let reward_coin = coin::split(&mut reward_fund_coin, reward, ctx);
+        house::deposit(house, reward_fund_coin);
 
         transfer::public_transfer(reward_coin, sender);
 
@@ -342,7 +355,7 @@ module suigar::lootbox {
             i = i + 1;
         };
         assert!(
-            sum == TotalPropability,
+            sum == TotalProbability,
             EInvalidInput
         );
 
