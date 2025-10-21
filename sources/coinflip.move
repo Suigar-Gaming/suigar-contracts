@@ -17,11 +17,13 @@ module suigar::coinflip {
     //=================================================================
 
     // Config =========================================================
-    const TotalPropability: u64 = 100_000_000;
+    const TotalProbability: u64 = 100_000_000;
 
     // Error codes ====================================================
     const EInsufficientBet: u64 = 4;
     const EInvalidBetId: u64 = 5;
+    const EInvalidMaxBetConfig: u64 = 6;
+    const EInvalidThresholdConfig: u64 = 7;
 
     //=================================================================
     // Module Structs
@@ -58,6 +60,7 @@ module suigar::coinflip {
         threshold: u64,
         ctx: &mut TxContext
     ) {
+        assert_valid_config(max_bet, threshold);
         transfer::share_object(
             CoinFlipGame<T0> {
                 id: object::new(ctx),
@@ -74,11 +77,17 @@ module suigar::coinflip {
         max_bet: u64,
         threshold: u64,
     ) {
+        assert_valid_config(max_bet, threshold);
         coinflip.max_bet = max_bet;
         coinflip.threshold = threshold;
     }
 
     // Modifiers ======================================================
+    fun assert_valid_config(max_bet: u64, threshold: u64) {
+        let max_threshold = TotalProbability / 10;
+        assert!(max_bet > 0, EInvalidMaxBetConfig);
+        assert!(threshold > 0 && threshold <= max_threshold, EInvalidThresholdConfig);
+    }
     public fun bet<T0>(
         coinflip: &mut CoinFlipGame<T0>,
         house: &mut House<T0>,
@@ -127,7 +136,7 @@ module suigar::coinflip {
         house: &mut House<T0>,
         bet_id: ID,
         r: &Random,
-        ctx: &mut TxContext
+        ctx: &TxContext
     ) {
         // Assertion
         assert!(
@@ -139,7 +148,7 @@ module suigar::coinflip {
         let Bet {id, gambler, fund} = bet;
 
         let generator = random::new_generator(r, ctx);
-        let rand = random::generate_u64_in_range(&mut generator, 0, TotalPropability);
+        let rand = random::generate_u64_in_range(&mut generator, 0, TotalProbability);
         let win = rand > coinflip.threshold;
 
         let reward = if (win) {balance::value(&fund)} else { 0 };
@@ -195,7 +204,7 @@ module suigar::coinflip {
         );
 
         let generator = random::new_generator(r, ctx);
-        let rand = random::generate_u64_in_range(&mut generator, 0, TotalPropability);
+        let rand = random::generate_u64_in_range(&mut generator, 0, TotalProbability);
         let win = rand > coinflip.threshold;
 
 
