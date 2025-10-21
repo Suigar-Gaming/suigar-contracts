@@ -25,6 +25,7 @@ module suigar::limbo {
     const EInvalidBetId: u64 = 5;
     const EInvalidTargetMultiplier: u64 = 6;
     const EInvalidNumberOfBets: u64 = 7;
+    const EInvalidRtpConfig: u64 = 8;
 
     //=================================================================
     // Module Structs
@@ -82,6 +83,16 @@ module suigar::limbo {
         max_rtp: UQ32_32,
         ctx: &mut TxContext
     ) {
+        assert_valid_config(
+            min_bet,
+            max_bet,
+            max_payout,
+            min_target_multiplier,
+            max_target_multiplier,
+            max_number_of_bets,
+            min_rtp,
+            max_rtp,
+        );
         transfer::share_object(
             LimboGame<T0> {
                 id: object::new(ctx),
@@ -110,6 +121,16 @@ module suigar::limbo {
         min_rtp: UQ32_32,
         max_rtp: UQ32_32,
     ) {
+        assert_valid_config(
+            min_bet,
+            max_bet,
+            max_payout,
+            min_target_multiplier,
+            max_target_multiplier,
+            max_number_of_bets,
+            min_rtp,
+            max_rtp,
+        );
         limbo_game.min_bet = min_bet;
         limbo_game.max_bet = max_bet;
         limbo_game.max_payout = max_payout;
@@ -122,6 +143,34 @@ module suigar::limbo {
 
     // Modifiers ======================================================
 
+    fun assert_valid_config(
+        min_bet: u64,
+        max_bet: u64,
+        max_payout: u64,
+        min_target_multiplier: UQ32_32,
+        max_target_multiplier: UQ32_32,
+        max_number_of_bets: u8,
+        min_rtp: UQ32_32,
+        max_rtp: UQ32_32,
+    ) {
+        assert!(min_bet > 0, EInvalidBetAmount);
+        assert!(max_bet >= min_bet, EInvalidBetAmount);
+        assert!(max_payout >= max_bet, EInvalidBetAmount);
+        assert!(max_number_of_bets > 0, EInvalidNumberOfBets);
+        assert!(
+            uq32_32::le(min_target_multiplier, max_target_multiplier),
+            EInvalidTargetMultiplier
+        );
+        assert!(
+            uq32_32::ge(min_rtp, uq32_32::from_quotient(80, 100)),
+            EInvalidRtpConfig
+        );
+        assert!(
+            uq32_32::le(min_rtp, max_rtp),
+            EInvalidRtpConfig
+        );
+    }
+
     fun place_bet<T0>(
         limbo_game: &mut LimboGame<T0>,
         house: &mut House<T0>,
@@ -131,10 +180,14 @@ module suigar::limbo {
         ctx: &mut TxContext
     ): ID {
         let amount = coin::value(&bet_coin);
-        let amount_per_bet = amount / (number_of_bets as u64);
+        assert!(
+            number_of_bets > 0,
+            EInvalidNumberOfBets
+        );
+        let number_of_bets_u64 = number_of_bets as u64;
+        let amount_per_bet = amount / number_of_bets_u64;
         let max_reward = uq32_32::int_mul(amount, target_multiplier);
-        let max_reward_per_bet = uq32_32::int_mul(amount_per_bet, target_multiplier);
-
+        let max_reward_per_bet = max_reward / number_of_bets_u64;
 
 
         assert!(
