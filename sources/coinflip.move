@@ -84,88 +84,90 @@ module suigar::coinflip {
 
     // Modifiers ======================================================
     fun assert_valid_config(max_bet: u64, threshold: u64) {
-        let max_threshold = TotalProbability / 10;
+        let min_threshold = TotalProbability / 2;
+        let max_threshold = 6 * TotalProbability / 10;
         assert!(max_bet > 0, EInvalidMaxBetConfig);
-        assert!(threshold > 0 && threshold <= max_threshold, EInvalidThresholdConfig);
-    }
-    public fun bet<T0>(
-        coinflip: &mut CoinFlipGame<T0>,
-        house: &mut House<T0>,
-        bet_coin: Coin<T0>,
-        ctx: &mut TxContext
-    ) {
-        // Assertion
-        let amount = coin::value(&bet_coin);
-
-        assert!(
-            amount <= coinflip.max_bet,
-            EInsufficientBet
-        );
-
-        // Take payment
-        let max_reward = amount * 2;
-        house::deposit(house, bet_coin);
-
-        let bet = Bet {
-            id: object::new(ctx),
-            gambler: tx_context::sender(ctx),
-            fund: house::take_fund_balance<T0>(house, max_reward)
-        };
-
-         house::distribute_referral_rewards(
-            house,
-            amount,
-            tx_context::sender(ctx)
-        );
-        // Emit the event
-        suigar::events::emit_bet_event(
-            object::uid_to_inner(&bet.id),
-            amount,
-            tx_context::sender(ctx)
-        );
-
-        vec_map::insert(
-            &mut coinflip.bets,
-            object::uid_to_inner(&bet.id),
-            bet
-        );
+        assert!(threshold >= min_threshold && threshold <= max_threshold, EInvalidThresholdConfig);
     }
 
-    entry fun reveal_bet_onchain_randomness<T0>(
-        coinflip: &mut CoinFlipGame<T0>,
-        house: &mut House<T0>,
-        bet_id: ID,
-        r: &Random,
-        ctx: &TxContext
-    ) {
-        // Assertion
-        assert!(
-            vec_map::contains(&coinflip.bets, &bet_id),
-            EInvalidBetId
-        );
+    // public fun bet<T0>(
+    //     coinflip: &mut CoinFlipGame<T0>,
+    //     house: &mut House<T0>,
+    //     bet_coin: Coin<T0>,
+    //     ctx: &mut TxContext
+    // ) {
+    //     // Assertion
+    //     let amount = coin::value(&bet_coin);
 
-        let (_, bet) = vec_map::remove(&mut coinflip.bets, &bet_id);
-        let Bet {id, gambler, fund} = bet;
+    //     assert!(
+    //         amount <= coinflip.max_bet,
+    //         EInsufficientBet
+    //     );
 
-        let generator = random::new_generator(r, ctx);
-        let rand = random::generate_u64_in_range(&mut generator, 0, TotalProbability);
-        let win = rand > coinflip.threshold;
+    //     // Take payment
+    //     let max_reward = amount * 2;
+    //     house::deposit(house, bet_coin);
 
-        let reward = if (win) {balance::value(&fund)} else { 0 };
+    //     let bet = Bet {
+    //         id: object::new(ctx),
+    //         gambler: tx_context::sender(ctx),
+    //         fund: house::take_fund_balance<T0>(house, max_reward)
+    //     };
 
-        if (win) {
-            transfer::public_transfer(
-                coin::from_balance(fund, ctx),
-                gambler
-            );
-            house::join_balance(house, balance::zero<T0>()); // used to avoid random hack due to gas cost for happy scenarios
-        } else {
-            house::join_balance(house, fund);
-        };
+    //      house::distribute_referral_rewards(
+    //         house,
+    //         amount,
+    //         tx_context::sender(ctx)
+    //     );
+    //     // Emit the event
+    //     suigar::events::emit_bet_event(
+    //         object::uid_to_inner(&bet.id),
+    //         amount,
+    //         tx_context::sender(ctx)
+    //     );
 
-        suigar::events::emit_revealed_bet_event(bet_id, win, reward, gambler);
-        object::delete(id);
-    }
+    //     vec_map::insert(
+    //         &mut coinflip.bets,
+    //         object::uid_to_inner(&bet.id),
+    //         bet
+    //     );
+    // }
+
+    // entry fun reveal_bet_onchain_randomness<T0>(
+    //     coinflip: &mut CoinFlipGame<T0>,
+    //     house: &mut House<T0>,
+    //     bet_id: ID,
+    //     r: &Random,
+    //     ctx: &TxContext
+    // ) {
+    //     // Assertion
+    //     assert!(
+    //         vec_map::contains(&coinflip.bets, &bet_id),
+    //         EInvalidBetId
+    //     );
+
+    //     let (_, bet) = vec_map::remove(&mut coinflip.bets, &bet_id);
+    //     let Bet {id, gambler, fund} = bet;
+
+    //     let generator = random::new_generator(r, ctx);
+    //     let rand = random::generate_u64_in_range(&mut generator, 0, TotalProbability);
+    //     let win = rand > coinflip.threshold;
+
+    //     let reward = if (win) {balance::value(&fund)} else { 0 };
+
+    //     if (win) {
+    //         transfer::public_transfer(
+    //             coin::from_balance(fund, ctx),
+    //             gambler
+    //         );
+    //         house::join_balance(house, balance::zero<T0>()); // used to avoid random hack due to gas cost for happy scenarios
+    //     } else {
+    //         house::join_balance(house, fund);
+    //     };
+
+    //     suigar::events::emit_revealed_bet_event(bet_id, win, reward, gambler);
+    //     object::delete(id);
+    // }
 
     entry fun place_bet_and_reveal_onchain_randomness<T0>(
         coinflip: &CoinFlipGame<T0>,
