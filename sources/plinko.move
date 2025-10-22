@@ -1155,28 +1155,28 @@ module suigar::plinko {
     }
 
 
-    public fun bet<T0>(
-        plinko_game: &mut PlinkoGame<T0>,
-        house: &mut House<T0>,
-        plinko_config_number: u8,
-        bet_coin: Coin<T0>,
-        num_balls: u8,
-        ctx: &mut TxContext
-    ) {
-        place_bet(plinko_game, house, plinko_config_number, bet_coin, num_balls, ctx);
+    // public fun bet<T0>(
+    //     plinko_game: &mut PlinkoGame<T0>,
+    //     house: &mut House<T0>,
+    //     plinko_config_number: u8,
+    //     bet_coin: Coin<T0>,
+    //     num_balls: u8,
+    //     ctx: &mut TxContext
+    // ) {
+    //     place_bet(plinko_game, house, plinko_config_number, bet_coin, num_balls, ctx);
 
-    }
+    // }
 
-    entry fun reveal_bet_onchain_randomness<T0>(
-        plinko_game: &mut PlinkoGame<T0>,
-        house: &mut House<T0>,
-        bet_id: ID,
-        r: &Random,
-        ctx: &mut TxContext
-    ) {
-        reveal_bet(plinko_game, house, bet_id, r, ctx);
+    // entry fun reveal_bet_onchain_randomness<T0>(
+    //     plinko_game: &mut PlinkoGame<T0>,
+    //     house: &mut House<T0>,
+    //     bet_id: ID,
+    //     r: &Random,
+    //     ctx: &mut TxContext
+    // ) {
+    //     reveal_bet(plinko_game, house, bet_id, r, ctx);
 
-    }
+    // }
 
     entry fun place_bet_and_reveal_onchain_randomness<T0>(
         plinko_game: &mut PlinkoGame<T0>,

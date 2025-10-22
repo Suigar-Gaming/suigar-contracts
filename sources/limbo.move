@@ -155,7 +155,6 @@ module suigar::limbo {
     ) {
         assert!(min_bet > 0, EInvalidBetAmount);
         assert!(max_bet >= min_bet, EInvalidBetAmount);
-        assert!(max_payout >= max_bet, EInvalidBetAmount);
         assert!(max_number_of_bets > 0, EInvalidNumberOfBets);
         assert!(
             uq32_32::le(min_target_multiplier, max_target_multiplier),
@@ -362,38 +361,38 @@ module suigar::limbo {
         object::delete(id);
     }
 
-    public fun bet<T0>(
-        limbo_game: &mut LimboGame<T0>,
-        house: &mut House<T0>,
-        bet_coin: Coin<T0>,
-        target_multiplier_numerator: u64,
-        target_multiplier_denominator: u64,
-        number_of_bets: u8,
-        ctx: &mut TxContext
-    ) {
-        let target_multiplier = uq32_32::from_quotient(
-            target_multiplier_numerator,
-            target_multiplier_denominator
-        );
-        place_bet(
-            limbo_game,
-            house,
-            bet_coin,
-            target_multiplier,
-            number_of_bets,
-            ctx
-        );
-    }
+    // public fun bet<T0>(
+    //     limbo_game: &mut LimboGame<T0>,
+    //     house: &mut House<T0>,
+    //     bet_coin: Coin<T0>,
+    //     target_multiplier_numerator: u64,
+    //     target_multiplier_denominator: u64,
+    //     number_of_bets: u8,
+    //     ctx: &mut TxContext
+    // ) {
+    //     let target_multiplier = uq32_32::from_quotient(
+    //         target_multiplier_numerator,
+    //         target_multiplier_denominator
+    //     );
+    //     place_bet(
+    //         limbo_game,
+    //         house,
+    //         bet_coin,
+    //         target_multiplier,
+    //         number_of_bets,
+    //         ctx
+    //     );
+    // }
 
-    entry fun reveal_bet_onchain_randomness<T0>(
-        limbo_game: &mut LimboGame<T0>,
-        house: &mut House<T0>,
-        bet_id: ID,
-        r: &Random,
-        ctx: &mut TxContext
-    ) {
-        reveal_bet(limbo_game, house, bet_id, r, ctx);
-    }
+    // entry fun reveal_bet_onchain_randomness<T0>(
+    //     limbo_game: &mut LimboGame<T0>,
+    //     house: &mut House<T0>,
+    //     bet_id: ID,
+    //     r: &Random,
+    //     ctx: &mut TxContext
+    // ) {
+    //     reveal_bet(limbo_game, house, bet_id, r, ctx);
+    // }
 
     entry fun bet_and_reveal_onchain_randomness<T0>(
         limbo_game: &mut LimboGame<T0>,
