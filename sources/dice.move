@@ -143,7 +143,7 @@ module suigar::dice {
             EInvalidRtpConfig
         );
         assert!(
-            uq32_32::le(min_rtp, uq32_32::from_quotient(80, 100)),
+            uq32_32::ge(min_rtp, uq32_32::from_quotient(80, 100)),
             EInvalidRtpConfig
         );
     }
@@ -184,7 +184,7 @@ module suigar::dice {
         );
 
         assert!(
-            bet_threshold <= MaxRange,
+            bet_threshold < MaxRange,
             EInvalidBetThreshold
         );
 
@@ -341,35 +341,35 @@ module suigar::dice {
         object::delete(id);
     }
 
-    public fun bet<T0>(
-        dice_game: &mut DiceGame<T0>,
-        house: &mut House<T0>,
-        bet_coin: Coin<T0>,
-        bet_threshold: u64,
-        roll_under: bool,
-        number_of_dices: u8,
-        ctx: &mut TxContext
-    ) {
-        place_bet(
-            dice_game,
-            house,
-            bet_coin,
-            bet_threshold,
-            roll_under,
-            number_of_dices,
-            ctx
-        );
-    }
+    // public fun bet<T0>(
+    //     dice_game: &mut DiceGame<T0>,
+    //     house: &mut House<T0>,
+    //     bet_coin: Coin<T0>,
+    //     bet_threshold: u64,
+    //     roll_under: bool,
+    //     number_of_dices: u8,
+    //     ctx: &mut TxContext
+    // ) {
+    //     place_bet(
+    //         dice_game,
+    //         house,
+    //         bet_coin,
+    //         bet_threshold,
+    //         roll_under,
+    //         number_of_dices,
+    //         ctx
+    //     );
+    // }
 
-    entry fun reveal_bet_onchain_randomness<T0>(
-        dice_game: &mut DiceGame<T0>,
-        house: &mut House<T0>,
-        bet_id: ID,
-        r: &Random,
-        ctx: &mut TxContext
-    ) {
-        reveal_bet(dice_game, house, bet_id, r, ctx);
-    }
+    // entry fun reveal_bet_onchain_randomness<T0>(
+    //     dice_game: &mut DiceGame<T0>,
+    //     house: &mut House<T0>,
+    //     bet_id: ID,
+    //     r: &Random,
+    //     ctx: &mut TxContext
+    // ) {
+    //     reveal_bet(dice_game, house, bet_id, r, ctx);
+    // }
 
     entry fun bet_and_reveal_onchain_randomness<T0>(
         dice_game: &mut DiceGame<T0>,

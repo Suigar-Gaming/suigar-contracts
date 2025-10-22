@@ -23,8 +23,8 @@ module suigar::lootbox {
 
     const EInvalidInput: u64 = 3;
     const EInsufficientPayment: u64 = 4;
-    const EInvalidLooBoxId: u64 = 5;
-    const EInvalidPurchasedLooBoxId: u64 = 6;
+    const EInvalidLootBoxId: u64 = 5;
+    const EInvalidPurchasedLootBoxId: u64 = 6;
     const ELootboxNotPlayable: u64 = 7;
 
     //=================================================================
@@ -144,118 +144,118 @@ module suigar::lootbox {
         lootbox.title = title;
     }
 
-    public fun purchase_lootbox<T0>(
-        lootbox_game: &mut LootboxGame<T0>,
-        house: &mut House<T0>,
-        lootbox_id: ID,
-        payment_coin: &mut coin::Coin<T0>,
-        ctx: &mut TxContext
-    ) {
-        // Get lootbox
-        let lootbox = get_mut_lootbox(
-            &mut lootbox_game.lootboxes,
-            &lootbox_id
-        );
+    // public fun purchase_lootbox<T0>(
+    //     lootbox_game: &mut LootboxGame<T0>,
+    //     house: &mut House<T0>,
+    //     lootbox_id: ID,
+    //     payment_coin: &mut coin::Coin<T0>,
+    //     ctx: &mut TxContext
+    // ) {
+    //     // Get lootbox
+    //     let lootbox = get_mut_lootbox(
+    //         &mut lootbox_game.lootboxes,
+    //         &lootbox_id
+    //     );
 
-        // Assertion
-        assert!(
-            coin::value(payment_coin) >= lootbox.price,
-            EInsufficientPayment
-        );
+    //     // Assertion
+    //     assert!(
+    //         coin::value(payment_coin) >= lootbox.price,
+    //         EInsufficientPayment
+    //     );
 
-        assert!(
-            lootbox.is_playable == true,
-            ELootboxNotPlayable
-        );
+    //     assert!(
+    //         lootbox.is_playable == true,
+    //         ELootboxNotPlayable
+    //     );
 
-        // Take payment
-        let coin = coin::split(payment_coin, lootbox.price, ctx);
-        let amount = coin::value(&coin);
-        house::deposit(house, coin);
+    //     // Take payment
+    //     let coin = coin::split(payment_coin, lootbox.price, ctx);
+    //     let amount = coin::value(&coin);
+    //     house::deposit(house, coin);
 
-        // Create purchased lootbox
-        let max_reward = *vector::borrow(
-            &lootbox.reward_amounts,
-            vector::length(&lootbox.reward_amounts) - 1
-        );
-        let id = object::new(ctx);
-        let purchased_lootbox = PurchasedLootBox {
-            id,
-            lootbox_id: object::uid_to_inner(&lootbox.id),
-            buyer: tx_context::sender(ctx),
-            fund: house::take_fund_balance(house, max_reward)
-        };
+    //     // Create purchased lootbox
+    //     let max_reward = *vector::borrow(
+    //         &lootbox.reward_amounts,
+    //         vector::length(&lootbox.reward_amounts) - 1
+    //     );
+    //     let id = object::new(ctx);
+    //     let purchased_lootbox = PurchasedLootBox {
+    //         id,
+    //         lootbox_id: object::uid_to_inner(&lootbox.id),
+    //         buyer: tx_context::sender(ctx),
+    //         fund: house::take_fund_balance(house, max_reward)
+    //     };
 
-        house::distribute_referral_rewards(
-            house,
-            amount,
-            tx_context::sender(ctx)
-        );
+    //     house::distribute_referral_rewards(
+    //         house,
+    //         amount,
+    //         tx_context::sender(ctx)
+    //     );
 
-        events::emit_purchased_lootbox_event(
-            object::uid_to_inner(&lootbox.id),
-            object::uid_to_inner(&purchased_lootbox.id),
-            tx_context::sender(ctx),
-        );
+    //     events::emit_purchased_lootbox_event(
+    //         object::uid_to_inner(&lootbox.id),
+    //         object::uid_to_inner(&purchased_lootbox.id),
+    //         tx_context::sender(ctx),
+    //     );
 
-        vec_map::insert(
-            &mut lootbox_game.purchased_lootboxes,
-            object::uid_to_inner(&purchased_lootbox.id),
-            purchased_lootbox
-        );
+    //     vec_map::insert(
+    //         &mut lootbox_game.purchased_lootboxes,
+    //         object::uid_to_inner(&purchased_lootbox.id),
+    //         purchased_lootbox
+    //     );
 
-    }
+    // }
 
-    entry fun reveal_lootbox_onchain_randomness<T0>(
-        lootbox_game: &mut LootboxGame<T0>,
-        house: &mut House<T0>,
-        purchased_lootbox_id: ID,
-        r: &Random,
-        ctx: &mut TxContext
-    ) {
-        // Assertion
-        assert!(
-            vec_map::contains(
-                &lootbox_game.purchased_lootboxes,
-                &purchased_lootbox_id
-            ),
-            EInvalidPurchasedLooBoxId
-        );
+    // entry fun reveal_lootbox_onchain_randomness<T0>(
+    //     lootbox_game: &mut LootboxGame<T0>,
+    //     house: &mut House<T0>,
+    //     purchased_lootbox_id: ID,
+    //     r: &Random,
+    //     ctx: &mut TxContext
+    // ) {
+    //     // Assertion
+    //     assert!(
+    //         vec_map::contains(
+    //             &lootbox_game.purchased_lootboxes,
+    //             &purchased_lootbox_id
+    //         ),
+    //         EInvalidPurchasedLootBoxId
+    //     );
 
-        let (_, purchased_lootbox) = vec_map::remove(
-            &mut lootbox_game.purchased_lootboxes,
-            &purchased_lootbox_id
-        );
-        let PurchasedLootBox {id, lootbox_id, buyer, fund} = purchased_lootbox;
+    //     let (_, purchased_lootbox) = vec_map::remove(
+    //         &mut lootbox_game.purchased_lootboxes,
+    //         &purchased_lootbox_id
+    //     );
+    //     let PurchasedLootBox {id, lootbox_id, buyer, fund} = purchased_lootbox;
 
-        let lootbox = get_lootbox(
-            &lootbox_game.lootboxes,
-            &lootbox_id
-        );
+    //     let lootbox = get_lootbox(
+    //         &lootbox_game.lootboxes,
+    //         &lootbox_id
+    //     );
 
-        let generator = random::new_generator(r, ctx);
-        let rand = random::generate_u64_in_range(&mut generator, 0, TotalProbability);
-        let reward_index = get_reward_index(rand, &lootbox.reward_probabilities);
-        let reward = *vector::borrow(
-            &lootbox.reward_amounts,
-            reward_index
-        );
+    //     let generator = random::new_generator(r, ctx);
+    //     let rand = random::generate_u64_in_range(&mut generator, 0, TotalProbability);
+    //     let reward_index = get_reward_index(rand, &lootbox.reward_probabilities);
+    //     let reward = *vector::borrow(
+    //         &lootbox.reward_amounts,
+    //         reward_index
+    //     );
 
-        let mut reward_fund_coin = coin::from_balance(fund, ctx);
-        let reward_coin = coin::split(&mut reward_fund_coin, reward, ctx);
-        transfer::public_transfer(reward_coin, buyer);
-        house::deposit(house, reward_fund_coin);
+    //     let mut reward_fund_coin = coin::from_balance(fund, ctx);
+    //     let reward_coin = coin::split(&mut reward_fund_coin, reward, ctx);
+    //     transfer::public_transfer(reward_coin, buyer);
+    //     house::deposit(house, reward_fund_coin);
 
-        events::emit_revealed_lootbox_event(
-            object::uid_to_inner(&id),
-            lootbox_id,
-            buyer,
-            reward
-        );
+    //     events::emit_revealed_lootbox_event(
+    //         object::uid_to_inner(&id),
+    //         lootbox_id,
+    //         buyer,
+    //         reward
+    //     );
 
-        object::delete(id);
+    //     object::delete(id);
 
-    }
+    // }
 
     entry fun place_bet_and_reveal_lootbox_onchain_randomness<T0>(
         lootbox_game: &mut LootboxGame<T0>,
@@ -376,7 +376,7 @@ module suigar::lootbox {
     ): &mut LootBox {
         assert!(
             vec_map::contains(lootbox, id),
-            EInvalidLooBoxId
+            EInvalidLootBoxId
         );
         vec_map::get_mut(lootbox, id)
     }
@@ -384,7 +384,7 @@ module suigar::lootbox {
     fun get_lootbox(lootbox: &VecMap<ID, LootBox>, id: &ID): &LootBox {
         assert!(
             vec_map::contains(lootbox, id),
-            EInvalidLooBoxId
+            EInvalidLootBoxId
         );
         vec_map::get(lootbox, id)
     }
