@@ -1,0 +1,2 @@
+#!/bin/sh
+node .github/scripts/validate-git-identities.mjs --config || exit $?

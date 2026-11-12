@@ -1,0 +1,31 @@
+name: Publication privacy
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: ["**"]
+    tags: ["**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  publication-privacy:
+    if: github.event_name != 'push' || github.event.deleted != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version-file: .github/.node-version
+      - name: Test publication identity guard
+        run: node --test .github/scripts/validate-git-identities.test.mjs .github/scripts/fetch-git-event-objects.test.mjs
+      - name: Check incoming commits and squash metadata
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/check-publication-event.mjs
